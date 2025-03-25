@@ -36,7 +36,7 @@ float changeError = 0;
 float totalError = 0;
 float pidTerm = 0;
 float pidTerm_scaled = 0;// if the total gain we get is not in the PWM range we scale it down so that it's not bigger than |255|
-
+long prev_time;
 
 // void setup() {
 //   Serial.begin(9600);
@@ -68,21 +68,25 @@ void PIDcalculation(){
 void setup() {
   // LSM6DSO
   Serial.begin(115200);
+  Serial.println("CLEARSHEET");
+  Serial.println("LABEL,changeXAngle,changeYAngle,changeZAngle,Time");
   delay(500); //Do I need this?
   pinMode(A0, INPUT);
   pinMode(A1, INPUT);
   
   Wire.begin();
   delay(10);
-  if( myIMU.begin() )
-    Serial.println("Ready.");
-  else { 
-    Serial.println("Could not connect to IMU.");
-    Serial.println("Freezing");
-  }
+  myIMU.begin(0x6A,Wire);
+  myIMU.initialize(BASIC_SETTINGS);
+  // if( myIMU.begin(0x6A,Wire) )
+  //   Serial.println("Ready.");
+  // else { 
+  //   Serial.println("Could not connect to IMU.");
+  //   Serial.println("Freezing");
+  // }
 
-  if( myIMU.initialize(BASIC_SETTINGS) )
-    Serial.println("Loaded Settings.");
+  // if( myIMU.initialize(BASIC_SETTINGS) )
+  //   Serial.println("Loaded Settings.");
 
   //PID 
   pinMode(pwm, OUTPUT);
@@ -99,23 +103,24 @@ void loop() {
 
   //LSM6DSO
   //Get all parameters
+  long prev_time = millis();
   float xAccel1 = myIMU.readFloatAccelX() - 1.994; //these were the numbers that were showing up when I was attached to the wrong communication ports
   float yAccel1 = myIMU.readFloatAccelY() - 1.994;
   float zAccel1 = myIMU.readFloatAccelZ() - 1.994;
 
-  float xGyro1 = myIMU.readFloatGyroX() - 286.073;
-  float yGyro1 = myIMU.readFloatGyroY()- 286.073;
-  float zGyro1 = myIMU.readFloatGyroZ()- 286.073;
+  float xGyro1 = myIMU.readFloatGyroX();
+  float yGyro1 = myIMU.readFloatGyroY();
+  float zGyro1 = myIMU.readFloatGyroZ();
 
-  delay(1000);
+  delay(10);
 
   float xAccel2 = myIMU.readFloatAccelX()- 1.994; 
   float yAccel2 = myIMU.readFloatAccelY()- 1.994;
   float zAccel2 = myIMU.readFloatAccelZ()- 1.994;
 
-  float xGyro2 = myIMU.readFloatGyroX()- 286.073;
-  float yGyro2 = myIMU.readFloatGyroY()- 286.073;
-  float zGyro2 = myIMU.readFloatGyroZ()- 286.073;
+  float xGyro2 = myIMU.readFloatGyroX();
+  float yGyro2 = myIMU.readFloatGyroY();
+  float zGyro2 = myIMU.readFloatGyroZ();
 
   // change in values
   float changeXAccel = xAccel2 - xAccel1;
@@ -127,7 +132,10 @@ void loop() {
   float changeZGyro = zGyro2 - zGyro1;
 
   //change in angular position
-  float changeXAngle = changeXGyro * 1000;
+  long time = millis()-prev_time;
+  float changeXAngle = changeXGyro * time;
+  float changeYAngle = changeYGyro * time;
+  float changeZAngle = changeZGyro * time;
   input = changeXAngle;
 
   PIDcalculation();// find PID value
@@ -142,37 +150,41 @@ void loop() {
 
   analogWrite(pwm, pidTerm_scaled);
 
-  Serial.println(" ANGLE: ");
-  Serial.print(input);
+  // Serial.println(" X ANGLE: ");
+  // Serial.println(changeXAngle);
+  // Serial.println(" Y ANGLE: ");
+  // Serial.println(changeYAngle);
+  // Serial.println(" Z ANGLE: ");
+  // Serial.println(changeZAngle);
+
+  Serial.println( (String) "DATA,"+ changeXAngle + "," + changeYAngle + "," + changeZAngle + "," + millis());
+
 
   // delay(100);
 
-  // float changeYAngle = changeYGyro * 1000;
-  // float changeZAngle = changeZGyro * 1000;
-
   //print values
 
-  Serial.print("\nAccelerometer:\n");
-  Serial.print(" X = ");
-  Serial.println(myIMU.readFloatAccelX(), 3);
-  Serial.print(" Y = ");
-  Serial.println(myIMU.readFloatAccelY(), 3);
-  Serial.print(" Z = ");
-  Serial.println(myIMU.readFloatAccelZ(), 3);
+  // Serial.print("\nAccelerometer:\n");
+  // Serial.print(" X = ");
+  // Serial.println(myIMU.readFloatAccelX(), 3);
+  // Serial.print(" Y = ");
+  // Serial.println(myIMU.readFloatAccelY(), 3);
+  // Serial.print(" Z = ");
+  // Serial.println(myIMU.readFloatAccelZ(), 3);
 
-  Serial.print("\nGyroscope:\n");
-  Serial.print(" X = ");
-  Serial.println(myIMU.readFloatGyroX(), 3);
-  Serial.print(" Y = ");
-  Serial.println(myIMU.readFloatGyroY(), 3);
-  Serial.print(" Z = ");
-  Serial.println(myIMU.readFloatGyroZ(), 3);
+  // Serial.print("\nGyroscope:\n");
+  // Serial.print(" X = ");
+  // Serial.println(myIMU.readFloatGyroX(), 3);
+  // Serial.print(" Y = ");
+  // Serial.println(myIMU.readFloatGyroY(), 3);
+  // Serial.print(" Z = ");
+  // Serial.println(myIMU.readFloatGyroZ(), 3);
 
-  Serial.print("\nThermometer:\n");
-  Serial.print(" Degrees F = ");
-  Serial.println(myIMU.readTempF(), 3);
+  // Serial.print("\nThermometer:\n");
+  // Serial.print(" Degrees F = ");
+  // Serial.println(myIMU.readTempF(), 3);
   
-  delay(1000);
+  delay(100);
   
 
 
