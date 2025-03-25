@@ -1,12 +1,15 @@
 
 //Reference
 const int analogIn = A0; // potentiometer 1
-const int analogIn2 = A1 // Potentiometer 2
-float ref = 1;
+const int analogIn2 = A1; // Potentiometer 2
+float ref_pos = 1;
+double A_r1 =1;
+double A_r2 = 1;
 
 //Sensor Input
 #include "SparkFunLSM6DSO.h"
 #include "Wire.h"
+#include "math.h"
 //#include "SPI.h"
 
 LSM6DSO myIMU; //Default constructor is I2C, addr 0x6B
@@ -23,9 +26,9 @@ double setpoint, input;
 double pwm = 9; // this is the PWM pin for the motor for how much we move it to correct for its error
 const int dir = 4; //DIR pin to control the direction of the motor (clockwise/counter-clockwise)
 
-double Kp = 0.32;
-double Ki = 0.1;
-double Kd = -0.3;
+double Kp = 1;
+double Ki = 0;
+double Kd = 0;
 
 float last_error = 0;
 float error = 0;
@@ -45,7 +48,6 @@ float pidTerm_scaled = 0;// if the total gain we get is not in the PWM range we 
 //   pinMode(dir, OUTPUT);
 
 // }
-
 void Angle2Position(){
 
 }
@@ -67,8 +69,8 @@ void setup() {
   // LSM6DSO
   Serial.begin(115200);
   delay(500); //Do I need this?
-  pinMode(A0, INPUT)
-  pinMode(A1, INPUT)
+  pinMode(A0, INPUT);
+  pinMode(A1, INPUT);
   
   Wire.begin();
   delay(10);
@@ -92,7 +94,7 @@ void setup() {
 void loop() {
   A_r1 = (analogRead(analogIn))/1024;
   A_r2 = analogRead(analogIn2)/2048;
-  ref_pos = A_r1 * sin(2*pi()*A_r2*millis()); //ref sine wave
+  ref_pos = A_r1 * sin(2*M_PI*A_r2*millis()); //ref sine wave
   setpoint = ref_pos;
 
   //LSM6DSO
@@ -141,7 +143,7 @@ void loop() {
   analogWrite(pwm, pidTerm_scaled);
 
   Serial.println(" ANGLE: ");
-  Serial.print(angle);
+  Serial.print(input);
 
   // delay(100);
 
