@@ -1,3 +1,9 @@
+#include "SparkFunLSM6DSO.h"
+#include "Wire.h"
+#include "math.h"
+LSM6DSO myIMU; //Default constructor is I2C, addr 0x6B
+float x, y, z;                        //three axis acceleration data
+float roll, pitch;       //Roll & Pitch are the angles which rotate by the axis X and y
 
 //Reference
 const int analogIn = A0; // potentiometer 1
@@ -5,23 +11,14 @@ const int analogIn2 = A1; // Potentiometer 2
 float ref_pos = 1;
 double A_r1 =1;
 double A_r2 = 1;
+double position;
+
 
 //Sensor Input
-#include "SparkFunLSM6DSO.h"
-#include "Wire.h"
-#include "math.h"
-//#include "SPI.h"
 
-LSM6DSO myIMU; //Default constructor is I2C, addr 0x6B
 
 //PID
 double setpoint, input;
-
-
-// double count = 0; //set the counts of the encoder
-// double angle = 0;//set the angles
-// boolean A,B;
-// byte state, statep;
 
 double pwm = 9; // this is the PWM pin for the motor for how much we move it to correct for its error
 const int dir = 4; //DIR pin to control the direction of the motor (clockwise/counter-clockwise)
@@ -36,24 +33,21 @@ float changeError = 0;
 float totalError = 0;
 float pidTerm = 0;
 float pidTerm_scaled = 0;// if the total gain we get is not in the PWM range we scale it down so that it's not bigger than |255|
-long prev_time;
 
-// void setup() {
-//   Serial.begin(9600);
-//   pinMode(2, INPUT);//encoder pins
-//   pinMode(3, INPUT);
-//   attachInterrupt(0,Achange,CHANGE); //interrupt pins for encoder
-//   attachInterrupt(1,Bchange,CHANGE); 
-//   pinMode(pwm, OUTPUT);
-//   pinMode(dir, OUTPUT);
 
-// }
 void Angle2Position(){
+  //use geometry to get position from pitch
+  // position = ___;
+}
 
+void RP_calculate(){
+  roll = atan2(y , z) * 57.3;
+  pitch = atan2((- x) , sqrt(y * y + z * z)) * 57.3;
+  //Serial.println(roll);
+  //Serial.println(pitch);
 }
 
 void PIDcalculation(){
-  //angle = (0.9 * count); //count to angle conversion
   error = setpoint - input;
   
   changeError = error - last_error; // derivative term
@@ -66,27 +60,19 @@ void PIDcalculation(){
 }
 
 void setup() {
-  // LSM6DSO
   Serial.begin(115200);
-  Serial.println("CLEARSHEET");
-  Serial.println("LABEL,changeXAngle,changeYAngle,changeZAngle,Time");
-  delay(500); //Do I need this?
-  pinMode(A0, INPUT);
-  pinMode(A1, INPUT);
-  
   Wire.begin();
   delay(10);
-  myIMU.begin(0x6A,Wire);
-  myIMU.initialize(BASIC_SETTINGS);
-  // if( myIMU.begin(0x6A,Wire) )
-  //   Serial.println("Ready.");
-  // else { 
-  //   Serial.println("Could not connect to IMU.");
-  //   Serial.println("Freezing");
-  // }
 
-  // if( myIMU.initialize(BASIC_SETTINGS) )
-  //   Serial.println("Loaded Settings.");
+  if( myIMU.begin(0x6A,Wire) )
+    Serial.println("Ready.");
+  else { 
+    Serial.println("Could not connect to IMU.");
+    Serial.println("Freezing");
+  }
+
+  if( myIMU.initialize(BASIC_SETTINGS) )
+    Serial.println("Loaded Settings.");
 
   //PID 
   pinMode(pwm, OUTPUT);
@@ -101,42 +87,18 @@ void loop() {
   ref_pos = A_r1 * sin(2*M_PI*A_r2*millis()); //ref sine wave
   setpoint = ref_pos;
 
-  //LSM6DSO
-  //Get all parameters
-  long prev_time = millis();
-  float xAccel1 = myIMU.readFloatAccelX() - 1.994; //these were the numbers that were showing up when I was attached to the wrong communication ports
-  float yAccel1 = myIMU.readFloatAccelY() - 1.994;
-  float zAccel1 = myIMU.readFloatAccelZ() - 1.994;
+  x = myIMU.readFloatAccelX();
+  y = myIMU.readFloatAccelY();
+  z = myIMU.readFloatAccelZ();
+  //Serial.println(x,10);
 
-  float xGyro1 = myIMU.readFloatGyroX();
-  float yGyro1 = myIMU.readFloatGyroY();
-  float zGyro1 = myIMU.readFloatGyroZ();
+  RP_calculate();
+  Serial.println(pitch,10);
+  //Serial.println(roll,10);
 
-  delay(10);
+  // PID
 
-  float xAccel2 = myIMU.readFloatAccelX()- 1.994; 
-  float yAccel2 = myIMU.readFloatAccelY()- 1.994;
-  float zAccel2 = myIMU.readFloatAccelZ()- 1.994;
-
-  float xGyro2 = myIMU.readFloatGyroX();
-  float yGyro2 = myIMU.readFloatGyroY();
-  float zGyro2 = myIMU.readFloatGyroZ();
-
-  // change in values
-  float changeXAccel = xAccel2 - xAccel1;
-  float changeYAccel = yAccel2 - yAccel1;
-  float changeZAccel = zAccel2 - zAccel1;
-
-  float changeXGyro = xGyro2 - xGyro1;
-  float changeYGyro = yGyro2 - yGyro1;
-  float changeZGyro = zGyro2 - zGyro1;
-
-  //change in angular position
-  long time = millis()-prev_time;
-  float changeXAngle = changeXGyro * time;
-  float changeYAngle = changeYGyro * time;
-  float changeZAngle = changeZGyro * time;
-  input = changeXAngle;
+  input = position;
 
   PIDcalculation();// find PID value
   
@@ -150,43 +112,6 @@ void loop() {
 
   analogWrite(pwm, pidTerm_scaled);
 
-  // Serial.println(" X ANGLE: ");
-  // Serial.println(changeXAngle);
-  // Serial.println(" Y ANGLE: ");
-  // Serial.println(changeYAngle);
-  // Serial.println(" Z ANGLE: ");
-  // Serial.println(changeZAngle);
-
-  Serial.println( (String) "DATA,"+ changeXAngle + "," + changeYAngle + "," + changeZAngle + "," + millis());
-
-
-  // delay(100);
-
-  //print values
-
-  // Serial.print("\nAccelerometer:\n");
-  // Serial.print(" X = ");
-  // Serial.println(myIMU.readFloatAccelX(), 3);
-  // Serial.print(" Y = ");
-  // Serial.println(myIMU.readFloatAccelY(), 3);
-  // Serial.print(" Z = ");
-  // Serial.println(myIMU.readFloatAccelZ(), 3);
-
-  // Serial.print("\nGyroscope:\n");
-  // Serial.print(" X = ");
-  // Serial.println(myIMU.readFloatGyroX(), 3);
-  // Serial.print(" Y = ");
-  // Serial.println(myIMU.readFloatGyroY(), 3);
-  // Serial.print(" Z = ");
-  // Serial.println(myIMU.readFloatGyroZ(), 3);
-
-  // Serial.print("\nThermometer:\n");
-  // Serial.print(" Degrees F = ");
-  // Serial.println(myIMU.readTempF(), 3);
-  
   delay(100);
-  
-
-
 
 }
