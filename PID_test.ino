@@ -134,7 +134,7 @@ void setup() {
 
 void loop() {
   //******************Variables******************************************************
-  setpoint = 85;
+  setpoint = 85; //angle you want it to be from 75 to 105 degrees
   x = myIMU.readFloatAccelX(); 
   y = myIMU.readFloatAccelY();
   z = myIMU.readFloatAccelZ();
