@@ -1,11 +1,4 @@
-/*
-PEK, Noah Karow
-Mar 28, 2025
-Senior Design Proj: Fish Robot Inc
 
-This code will allow us to do open loop control, as we test out accelerometer and motor drivers
-Diff from other code: no potentiometers, or PID. I also got rid of the roll and pitch function
-*/
 
 // Libraries
 #include "SparkFunLSM6DSO.h"
@@ -36,7 +29,7 @@ float roll, pitch;       //Roll & Pitch are the angles which rotate by the axis 
 double setpoint, input;
 
 
-double Kp = 1;
+double Kp = .3;
 double Ki = 0;
 double Kd = 0;
 
@@ -49,11 +42,11 @@ float pidTerm_scaled;// if the total gain we get is not in the PWM range we scal
 
 double mag_pos;
 
-void Angle2Position(float angle){
-  double r = .045;
-  double L = .125;
-  mag_pos = (r * sqrt((pow(L,2))*cos(angle)+((pow(L,2))/4) * (1 - pow(cos(angle),2))))/((L*cos(angle))/2);
-}
+// void Angle2Position(float angle){
+//   double r = .045;
+//   double L = .125;
+//   mag_pos = (r * sqrt((pow(L,2))*cos(angle)+((pow(L,2))/4) * (1 - pow(cos(angle),2))))/((L*cos(angle))/2);
+// }
 
 void RP_calculate(){
   roll = atan2(y , z) * 57.3;
@@ -141,15 +134,16 @@ void setup() {
 
 void loop() {
   //******************Variables******************************************************
-  setpoint = 1;
+  setpoint = 85;
   x = myIMU.readFloatAccelX(); 
   y = myIMU.readFloatAccelY();
   z = myIMU.readFloatAccelZ();
 
   RP_calculate();
-  Angle2Position(pitch);
-  Serial.println(mag_pos);
-  input = mag_pos;
+  //Angle2Position(roll);
+  Serial.println(roll);
+  //input = mag_pos;
+  input = roll;
   PIDcalculation();
   MD_Control(pidTerm);
  
