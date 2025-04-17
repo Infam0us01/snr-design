@@ -15,8 +15,6 @@ double CONSTANT_FORCE;
 double CONSTANT_FORCE_FACTOR;
 
 
-// object: 9 DOF sensor
-//Adafruit_BNO055 sensor = Adafruit_BNO055(55, 0x28, &Wire); //I2C, addr 0x28
 
 // ****************PINS**********************************************************
 // motor pins are all digital. 
@@ -34,7 +32,7 @@ const int pwmDriver2 = 11; // driver 2, orange
 double setpoint, input;
 
 
-double Kp = 1;
+double Kp = .5;
 double Ki = 0;
 double Kd = 0;
 
